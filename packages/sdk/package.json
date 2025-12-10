@@ -1,6 +1,6 @@
 {
   "name": "fluxprotocol-sdk",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Universal AI Connectivity - 4 lines, zero learning curve",
   "type": "module",
   "main": "./dist/index.js",
