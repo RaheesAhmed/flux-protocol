@@ -1,6 +1,6 @@
 {
   "name": "fluxprotocol-cli",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "FLUX CLI - create, dev, build connectors",
   "type": "module",
   "bin": {
