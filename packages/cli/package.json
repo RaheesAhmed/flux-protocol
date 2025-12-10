@@ -1,0 +1,29 @@
+{
+  "name": "@flux/cli",
+  "version": "0.0.1",
+  "description": "FLUX CLI - create, dev, build connectors",
+  "type": "module",
+  "bin": {
+    "flux": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm",
+    "dev": "tsup src/index.ts --format esm --watch",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "chalk": "^5.4.1",
+    "ora": "^8.1.1",
+    "inquirer": "^12.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "rimraf": "^6.0.1"
+  },
+  "keywords": ["flux", "cli", "mcp", "connector"],
+  "license": "MIT"
+}
