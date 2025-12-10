@@ -1,4 +1,4 @@
-import type { FluxServer } from '@flux/sdk';
+import type { FluxServer } from '../runtime/server.js';
 
 interface VercelRequest {
   method?: string;

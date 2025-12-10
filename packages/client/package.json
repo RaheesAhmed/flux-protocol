@@ -1,5 +1,5 @@
 {
-  "name": "@flux/client",
+  "name": "fluxprotocol-client",
   "version": "0.0.1",
   "description": "FLUX client library for HTTP and WebSocket",
   "type": "module",

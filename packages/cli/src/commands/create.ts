@@ -4,7 +4,7 @@ import { join } from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
 
-const TEMPLATE = `import { connector, method, FluxServer, StdioTransport } from '@flux/sdk';
+const TEMPLATE = `import { connector, method, FluxServer, StdioTransport } from 'fluxprotocol-sdk';
 
 @connector('{{name}}', { description: '{{name}} connector' })
 class {{className}}Connector {
@@ -29,7 +29,7 @@ const PACKAGE_TEMPLATE = `{
     "dev": "tsx watch index.ts"
   },
   "dependencies": {
-    "@flux/sdk": "latest"
+    "fluxprotocol-sdk": "latest"
   },
   "devDependencies": {
     "tsx": "^4.19.2",

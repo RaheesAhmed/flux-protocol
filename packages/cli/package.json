@@ -1,5 +1,5 @@
 {
-  "name": "@flux/cli",
+  "name": "fluxprotocol-cli",
   "version": "0.0.1",
   "description": "FLUX CLI - create, dev, build connectors",
   "type": "module",

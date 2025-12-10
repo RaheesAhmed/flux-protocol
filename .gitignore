@@ -31,3 +31,5 @@ pnpm-debug.log*
 
 # Test coverage
 coverage/
+MCP-ISSUES.MD
+PRD.MD

@@ -1,4 +1,4 @@
-import { connector, method, FluxServer, StdioTransport } from '@flux/sdk';
+import { connector, method, FluxServer, StdioTransport } from 'fluxprotocol-sdk';
 
 @connector('test-connector', { description: 'test-connector connector' })
 class TestConnectorConnector {
