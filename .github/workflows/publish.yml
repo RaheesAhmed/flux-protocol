@@ -1,41 +1,97 @@
-name: Release & Publish
+name: CI and Publish
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'packages/**'
-      - '!packages/**/README.md'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version bump type'
-        required: true
-        default: 'patch'
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  release:
+  # Build job - runs on all pushes and PRs
+  build:
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build project
+        run: pnpm build
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "packages/sdk/dist" ]; then
+            echo "❌ SDK build failed"
+            exit 1
+          fi
+          echo "✅ Build successful"
+
+  # Check if version changed - only on main branch
+  check-version:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      version_changed: ${{ steps.check.outputs.changed }}
+      new_version: ${{ steps.check.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: check
+        run: |
+          CURRENT_VERSION=$(node -p "require('./packages/sdk/package.json').version")
+          git show HEAD~1:packages/sdk/package.json > old-package.json 2>/dev/null || echo '{"version":"0.0.0"}' > old-package.json
+          OLD_VERSION=$(node -p "require('./old-package.json').version")
+
+          echo "Old version: $OLD_VERSION"
+          echo "New version: $CURRENT_VERSION"
+
+          if [ "$OLD_VERSION" != "$CURRENT_VERSION" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+            echo "✅ Version changed from $OLD_VERSION to $CURRENT_VERSION"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+            echo "ℹ️  Version unchanged: $CURRENT_VERSION"
+          fi
+
+  # Publish to npm - only when version changes on main
+  publish:
+    if: needs.check-version.outputs.version_changed == 'true'
+    needs: check-version
+    runs-on: ubuntu-latest
+
     permissions:
       contents: write
       id-token: write
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -50,47 +106,47 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build packages
+      - name: Build project
         run: pnpm build
 
-      - name: Bump versions
+      - name: Create and push tag
         run: |
-          VERSION_TYPE="${{ github.event.inputs.version || 'patch' }}"
-          cd packages/sdk && npm version $VERSION_TYPE --no-git-tag-version
-          cd ../cli && npm version $VERSION_TYPE --no-git-tag-version
-          cd ../client && npm version $VERSION_TYPE --no-git-tag-version
+          VERSION="v${{ needs.check-version.outputs.new_version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
 
-      - name: Get new version
-        id: version
-        run: |
-          VERSION=$(node -p "require('./packages/sdk/package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Commit version bump
-        run: |
-          git add -A
-          git commit -m "chore: release v${{ steps.version.outputs.version }}" || echo "No changes"
-          git tag "v${{ steps.version.outputs.version }}"
-          git push
-          git push --tags
-
-      - name: Publish SDK
-        run: cd packages/sdk && npm publish --provenance --access public
+      - name: Publish SDK to npm
+        run: cd packages/sdk && npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish CLI
-        run: cd packages/cli && npm publish --provenance --access public
+      - name: Publish CLI to npm
+        run: cd packages/cli && npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish Client
-        run: cd packages/client && npm publish --provenance --access public
+      - name: Publish Client to npm
+        run: cd packages/client && npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          generate_release_notes: true
+        run: |
+          VERSION="v${{ needs.check-version.outputs.new_version }}"
+          gh release create "$VERSION" \
+            --title "Release $VERSION" \
+            --notes "## Packages Published
+
+          - fluxprotocol-sdk@${{ needs.check-version.outputs.new_version }}
+          - fluxprotocol-cli@${{ needs.check-version.outputs.new_version }}
+          - fluxprotocol-client@${{ needs.check-version.outputs.new_version }}" \
+            --verify-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Success notification
+        run: |
+          echo "✅ Successfully published fluxprotocol packages v${{ needs.check-version.outputs.new_version }}"
+          echo "📦 npm: https://www.npmjs.com/package/fluxprotocol-sdk"
