@@ -13,9 +13,9 @@ FLUX SDK uses TypeScript decorators to create AI-compatible connectors with zero
 ## Required Imports
 
 ```typescript
-import { connector, method, FluxServer, StdioTransport } from '@flux/sdk';
+import { connector, method, FluxServer, StdioTransport } from 'fluxprotocol-sdk';
 // Optional transports:
-import { HttpTransport, WebSocketTransport } from '@flux/sdk';
+import { HttpTransport, WebSocketTransport } from 'fluxprotocol-sdk';
 ```
 
 ---
@@ -66,7 +66,7 @@ async getData(id: string): Promise<DataType> { }
 ## Complete Connector Template
 
 ```typescript
-import { connector, method, FluxServer, StdioTransport } from '@flux/sdk';
+import { connector, method, FluxServer, StdioTransport } from 'fluxprotocol-sdk';
 
 // Define types for your data
 interface WeatherData {
@@ -122,17 +122,21 @@ For HTTP/REST clients:
 ```typescript
 const server = new FluxServer(MyConnector);
 const transport = new HttpTransport(server, {
-  port: 3000,      // Default: 3000
-  cors: true,      // Default: true
-  prefix: '/api'   // Default: '/api'
+  port: 3000,       // Default: 3000
+  cors: true,       // Default: true
+  prefix: '/flux'   // Default: '/flux'
 });
 server.setTransport(transport);
 server.start();
 ```
 
 **Endpoints generated:**
-- `GET /api/tools` - List all tools
-- `POST /api/tools/:name` - Call a tool
+- `GET /flux/tools` - List all tools
+- `POST /flux/tools/:name` - Call a tool
+
+**TOON Format Support:**
+- Send `Accept: application/toon` header for 40% fewer tokens
+- Default: `application/json`
 
 ### WebSocketTransport (Real-time)
 
@@ -327,7 +331,7 @@ my-connector/
     "dev": "tsx watch index.ts"
   },
   "dependencies": {
-    "@flux/sdk": "latest"
+    "fluxprotocol-sdk": "latest"
   },
   "devDependencies": {
     "tsx": "^4.19.2"

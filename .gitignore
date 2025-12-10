@@ -33,4 +33,6 @@ pnpm-debug.log*
 coverage/
 MCP-ISSUES.MD
 PRD.MD
+FLUX-V2-PROPOSAL.md
+FLUX-TOON-INTEGRATION.md
 /test-with-agent/

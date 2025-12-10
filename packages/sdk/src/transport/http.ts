@@ -1,11 +1,14 @@
 import type { Transport, JsonRpcRequest, JsonRpcResponse } from '../types/index.js';
 import type { FluxServer } from '../runtime/server.js';
+import { encode as toonEncode } from '@toon-format/toon';
 
 interface HttpTransportOptions {
   port?: number;
   cors?: boolean;
   prefix?: string;
 }
+
+type ContentType = 'json' | 'toon';
 
 export class HttpTransport implements Transport {
   private server: FluxServer;
@@ -17,7 +20,7 @@ export class HttpTransport implements Transport {
     this.options = {
       port: options.port ?? 3000,
       cors: options.cors ?? true,
-      prefix: options.prefix ?? '/api',
+      prefix: options.prefix ?? '/flux',
     };
   }
 
@@ -28,7 +31,7 @@ export class HttpTransport implements Transport {
       if (this.options.cors) {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
 
         if (req.method === 'OPTIONS') {
           res.writeHead(204);
@@ -40,13 +43,13 @@ export class HttpTransport implements Transport {
       try {
         await this.handleRequest(req, res);
       } catch (error) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Internal server error' }));
+        this.sendResponse(res, 500, { error: 'Internal server error' }, 'json');
       }
     });
 
     this.httpServer.listen(this.options.port, () => {
-      console.log(`HTTP server running on http://localhost:${this.options.port}`);
+      console.log(`🚀 FLUX HTTP server running on http://localhost:${this.options.port}`);
+      console.log(`   Supports: application/json, application/toon`);
     });
   }
 
@@ -60,22 +63,45 @@ export class HttpTransport implements Transport {
     });
   }
 
+  private getResponseFormat(req: import('http').IncomingMessage): ContentType {
+    const accept = req.headers.accept ?? '';
+    if (accept.includes('application/toon')) {
+      return 'toon';
+    }
+    return 'json';
+  }
+
+  private sendResponse(
+    res: import('http').ServerResponse,
+    status: number,
+    data: unknown,
+    format: ContentType
+  ): void {
+    if (format === 'toon') {
+      res.writeHead(status, { 'Content-Type': 'application/toon' });
+      res.end(toonEncode(data));
+    } else {
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(data));
+    }
+  }
+
   private async handleRequest(
     req: import('http').IncomingMessage,
     res: import('http').ServerResponse
   ): Promise<void> {
     const url = new URL(req.url ?? '/', `http://localhost:${this.options.port}`);
     const path = url.pathname;
+    const format = this.getResponseFormat(req);
 
-    // GET /api/tools - List all tools
+    // GET /flux/tools - List all tools
     if (req.method === 'GET' && path === `${this.options.prefix}/tools`) {
       const tools = this.server.getTools();
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ tools }));
+      this.sendResponse(res, 200, { tools }, format);
       return;
     }
 
-    // POST /api/tools/:name - Call a tool
+    // POST /flux/tools/:name - Call a tool
     if (req.method === 'POST' && path.startsWith(`${this.options.prefix}/tools/`)) {
       const toolName = path.replace(`${this.options.prefix}/tools/`, '');
       const body = await this.readBody(req);
@@ -83,27 +109,23 @@ export class HttpTransport implements Transport {
 
       try {
         const result = await this.server.callTool(toolName, args);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ result }));
+        this.sendResponse(res, 200, { result }, format);
       } catch (error) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }));
+        this.sendResponse(res, 400, { error: error instanceof Error ? error.message : 'Unknown error' }, format);
       }
       return;
     }
 
-    // POST /api/rpc - JSON-RPC endpoint
+    // POST /flux/rpc - JSON-RPC endpoint
     if (req.method === 'POST' && path === `${this.options.prefix}/rpc`) {
       const body = await this.readBody(req);
       const request: JsonRpcRequest = JSON.parse(body);
       const response = await this.handleRpc(request);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(response));
+      this.sendResponse(res, 200, response, format);
       return;
     }
 
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
+    this.sendResponse(res, 404, { error: 'Not found' }, format);
   }
 
   private async handleRpc(request: JsonRpcRequest): Promise<JsonRpcResponse> {
@@ -137,3 +159,4 @@ export class HttpTransport implements Transport {
     });
   }
 }
+

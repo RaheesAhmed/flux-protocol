@@ -1,6 +1,7 @@
 export interface FluxClientOptions {
   baseUrl: string;
   headers?: Record<string, string>;
+  format?: 'json' | 'toon';
 }
 
 export interface ToolInfo {
