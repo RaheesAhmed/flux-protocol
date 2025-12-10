@@ -33,3 +33,4 @@ pnpm-debug.log*
 coverage/
 MCP-ISSUES.MD
 PRD.MD
+/test-with-agent/
