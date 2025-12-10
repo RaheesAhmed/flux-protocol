@@ -1,12 +1,13 @@
 {
   "name": "fluxprotocol-cli",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "FLUX CLI - create, dev, build connectors",
   "type": "module",
   "bin": {
     "flux": "./dist/index.js"
   },
   "main": "./dist/index.js",
+  "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsup src/index.ts --format esm",
     "dev": "tsup src/index.ts --format esm --watch",
