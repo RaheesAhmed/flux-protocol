@@ -1,0 +1,22 @@
+{
+  "name": "flux-protocol",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Universal AI Connectivity Layer - 4 lines, zero learning curve",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "clean": "turbo clean"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

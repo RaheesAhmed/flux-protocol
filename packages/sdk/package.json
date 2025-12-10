@@ -1,0 +1,33 @@
+{
+  "name": "@flux/sdk",
+  "version": "0.0.1",
+  "description": "Universal AI Connectivity - 4 lines, zero learning curve",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsup src/index.ts --format esm --dts --watch",
+    "test": "vitest",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "reflect-metadata": "^0.2.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "rimraf": "^6.0.1"
+  },
+  "keywords": ["ai", "mcp", "flux", "connector", "typescript"],
+  "license": "MIT"
+}
