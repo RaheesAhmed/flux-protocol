@@ -36,6 +36,18 @@ new HttpTransport(server, { port: 3000 });      // REST API + TOON
 new WebSocketTransport(server, { port: 3001 }); // Real-time
 ```
 
+## Decorators
+
+```typescript
+import { cache, rateLimit, retry, config } from 'fluxprotocol-sdk';
+
+@method()
+@cache({ ttl: 60000, maxSize: 100 })          // LRU cache with 1min TTL
+@rateLimit({ requests: 100, window: '1m' })   // 100 requests per minute
+@retry({ attempts: 3, backoff: 'exponential' }) // Auto-retry with backoff
+async myMethod() { ... }
+```
+
 ## TOON Format Support
 
 HTTP transport supports [TOON format](https://github.com/toon-format/toon) for 40% token reduction:

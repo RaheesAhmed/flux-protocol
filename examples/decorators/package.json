@@ -1,0 +1,7 @@
+{
+  "name": "decorators-example",
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx server.ts"
+  }
+}

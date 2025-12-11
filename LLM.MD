@@ -154,6 +154,143 @@ server.start();
 
 ---
 
+## Production Decorators
+
+FLUX provides production-ready decorators for common patterns:
+
+### @cache(options)
+
+Caches method results with LRU eviction and TTL:
+
+```typescript
+import { cache } from 'fluxprotocol-sdk';
+
+@method()
+@cache({ ttl: 60000, maxSize: 100 })  // Cache for 1 minute, max 100 entries
+async getUser(id: string): Promise<User> {
+  return await fetchUser(id);
+}
+
+// Custom cache key function
+@cache({ ttl: 30000, key: (id, opts) => `${id}-${opts.version}` })
+async getData(id: string, opts: Options): Promise<Data> { }
+```
+
+**Options:**
+- `ttl`: Time-to-live in milliseconds (default: 60000)
+- `maxSize`: Maximum cache entries (default: 100)
+- `key`: Custom function to generate cache key
+
+### @rateLimit(options)
+
+Token bucket rate limiting:
+
+```typescript
+import { rateLimit, RateLimitExceededError } from 'fluxprotocol-sdk';
+
+@method()
+@rateLimit({ requests: 100, window: '1m' })  // 100 requests per minute
+async searchUsers(query: string): Promise<User[]> { }
+
+// Window formats: '100ms', '10s', '1m', '1h' or number in ms
+@rateLimit({ requests: 10, window: 60000 })  // Same as '1m'
+async limitedMethod(): Promise<void> { }
+
+// Per-key rate limiting
+@rateLimit({ requests: 5, window: '1m', key: (userId) => userId })
+async userAction(userId: string): Promise<void> { }
+```
+
+**Options:**
+- `requests`: Maximum requests allowed in window
+- `window`: Time window (ms or string: '100ms', '10s', '1m', '1h')
+- `key`: 'global' | 'method' | custom function
+
+### @retry(options)
+
+Automatic retry with backoff strategies:
+
+```typescript
+import { retry } from 'fluxprotocol-sdk';
+
+@method()
+@retry({ attempts: 3, backoff: 'exponential' })  // Retry 3 times with exponential backoff
+async fetchExternalApi(): Promise<Data> { }
+
+// Linear backoff
+@retry({ attempts: 5, backoff: 'linear', delay: 500 })
+async unreliableMethod(): Promise<Data> { }
+
+// Conditional retry
+@retry({ 
+  attempts: 3, 
+  retryOn: (error) => error.message.includes('timeout') 
+})
+async conditionalRetry(): Promise<Data> { }
+```
+
+**Options:**
+- `attempts`: Maximum retry attempts (default: 3)
+- `backoff`: 'fixed' | 'exponential' | 'linear' (default: 'exponential')
+- `delay`: Base delay in ms (default: 1000)
+- `maxDelay`: Maximum delay in ms (default: 30000)
+- `retryOn`: Function to determine if error should trigger retry
+
+### @config(options)
+
+Authentication and environment configuration:
+
+```typescript
+import { config, getAuthHeader } from 'fluxprotocol-sdk';
+
+@connector('github')
+@config({
+  auth: { type: 'bearer', env: 'GITHUB_TOKEN' }
+})
+class GitHubConnector {
+  @method()
+  async getRepo(owner: string, repo: string) {
+    const headers = getAuthHeader(this);  // { Authorization: 'Bearer ...' }
+    return fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+  }
+}
+
+// API key authentication
+@config({ auth: { type: 'api_key', env: 'API_KEY', header: 'X-API-Key' } })
+class ApiConnector { }
+
+// Environment variable mapping
+@config({ env: { dbUrl: 'DATABASE_URL', apiKey: 'API_KEY' } })
+class ConfiguredConnector { }
+```
+
+**Auth Types:**
+- `'none'`: No authentication
+- `'api_key'`: Raw API key in header
+- `'bearer'`: Bearer token authentication
+- `'basic'`: Basic auth (base64 encoded)
+
+### Combining Decorators
+
+Decorators can be stacked for production-ready methods:
+
+```typescript
+@connector('api')
+@config({ auth: { type: 'bearer', env: 'API_TOKEN' } })
+class ApiConnector {
+  @method({ description: 'Fetch data with caching and retries' })
+  @cache({ ttl: 60000 })
+  @rateLimit({ requests: 100, window: '1m' })
+  @retry({ attempts: 3, backoff: 'exponential' })
+  async fetchData(id: string): Promise<Data> {
+    // Business logic only - caching, rate limiting, and retries handled automatically
+    return await this.callExternalApi(id);
+  }
+}
+```
+
+---
+
 ## Type Rules
 
 ### Parameter Types

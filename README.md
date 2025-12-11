@@ -83,6 +83,29 @@ const weather = await client.call('weather.getWeather', { city: 'Tokyo' });
 - `Accept: application/toon` → TOON response
 - `Accept: application/json` → JSON response (default)
 
+## Production Decorators
+
+```typescript
+import { cache, rateLimit, retry, config } from 'fluxprotocol-sdk';
+
+@connector('api')
+@config({ auth: { type: 'bearer', env: 'API_TOKEN' } })
+class ApiConnector {
+  @method()
+  @cache({ ttl: 60000 })                          // Cache 1 minute
+  @rateLimit({ requests: 100, window: '1m' })     // 100 req/min
+  @retry({ attempts: 3, backoff: 'exponential' }) // Auto-retry
+  async fetchData(id: string) { ... }
+}
+```
+
+| Decorator | Purpose |
+|-----------|---------|
+| `@cache` | LRU cache with TTL |
+| `@rateLimit` | Token bucket rate limiting |
+| `@retry` | Exponential/linear backoff |
+| `@config` | Auth & environment config |
+
 ## CLI Commands
 
 ```bash
